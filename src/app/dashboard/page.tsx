@@ -2,7 +2,10 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOutAction } from "@/app/actions/auth";
-import { LogOut, User, Shield, Heart, ArrowRight, AlertTriangle } from "lucide-react";
+import { ScoreService } from "@/lib/services/score.service";
+import { ScoreForm } from "@/components/dashboard/ScoreForm";
+import { ScoreList } from "@/components/dashboard/ScoreList";
+import { LogOut, User, Shield, Heart, AlertTriangle } from "lucide-react";
 
 export default async function DashboardPage({
   searchParams,
@@ -20,11 +23,10 @@ export default async function DashboardPage({
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, { data: scores = [] }] = await Promise.all([
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
+    ScoreService.getUserScores(supabase, user.id),
+  ]);
 
   return (
     <div className="min-h-screen bg-[#090D16] text-white p-4 sm:p-8">
@@ -81,13 +83,13 @@ export default async function DashboardPage({
           </div>
         )}
 
-        {/* Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-2">
+        {/* Overview Stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-1">
             <span className="text-xs font-medium text-slate-400">Account Role</span>
-            <div className="flex items-center gap-2">
+            <div>
               <span
-                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider ${
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase ${
                   profile?.role === "admin"
                     ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
                     : "bg-blue-500/10 text-blue-400 border border-blue-500/30"
@@ -96,12 +98,9 @@ export default async function DashboardPage({
                 {profile?.role || "subscriber"}
               </span>
             </div>
-            <p className="text-xs text-slate-500">
-              Role is strictly server-verified via Supabase PostgreSQL.
-            </p>
           </div>
 
-          <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-2">
+          <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-1">
             <span className="text-xs font-medium text-slate-400">Charity Contribution</span>
             <div className="flex items-center gap-2">
               <Heart className="h-4 w-4 text-emerald-400" />
@@ -109,41 +108,29 @@ export default async function DashboardPage({
                 {profile?.charity_contribution_pct ?? 10}%
               </span>
             </div>
-            <p className="text-xs text-slate-500">
-              Minimum 10% directed to charity.
-            </p>
           </div>
 
-          <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-2">
-            <span className="text-xs font-medium text-slate-400">Authentication</span>
-            <div className="text-xs text-slate-300 truncate">
-              {user.email}
-            </div>
-            <div className="text-[11px] text-emerald-400 flex items-center gap-1 font-medium">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 inline-block animate-pulse" />
-              Active Session Verified
+          <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-1">
+            <span className="text-xs font-medium text-slate-400">Scores Retained</span>
+            <div className="text-lg font-bold text-amber-400">
+              {scores.length} / 5
             </div>
           </div>
         </div>
 
-        {/* Milestone 1B Confirmation Notice */}
-        <div className="glass-panel p-6 rounded-xl border border-slate-800 space-y-3">
-          <h2 className="text-base font-semibold text-white">
-            Milestone 1B Verification Surface
-          </h2>
-          <p className="text-sm text-slate-400">
-            Authentication, session persistence, and server-side profile retrieval are functional.
-            In Milestone 1C, golf score management (1–45 range and 5-score rolling logic) will be integrated here.
-          </p>
-          <div className="pt-2 flex flex-wrap gap-3">
-            <Link
-              href="/profile"
-              className="inline-flex items-center gap-2 text-xs text-amber-400 hover:text-amber-300 transition"
-            >
-              <span>View Full Profile Information</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
+        {/* Score Management Section (Milestone 1C) */}
+        <div className="space-y-6">
+          <div className="space-y-1">
+            <h2 className="text-lg font-bold text-white">
+              Golf Score Management (Stableford)
+            </h2>
+            <p className="text-xs text-slate-400">
+              Record your scores between 1 and 45 points. Only your latest 5 scores (ordered by played date) are retained.
+            </p>
           </div>
+
+          <ScoreForm currentCount={scores.length} />
+          <ScoreList scores={scores} />
         </div>
       </div>
     </div>
