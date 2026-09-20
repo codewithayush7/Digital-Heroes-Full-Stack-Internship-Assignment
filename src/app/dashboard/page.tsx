@@ -3,9 +3,18 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOutAction } from "@/app/actions/auth";
 import { ScoreService } from "@/lib/services/score.service";
+import { CharityService } from "@/lib/services/charity.service";
 import { ScoreForm } from "@/components/dashboard/ScoreForm";
 import { ScoreList } from "@/components/dashboard/ScoreList";
-import { LogOut, User, Shield, Heart, AlertTriangle } from "lucide-react";
+import { CharitySelectionForm } from "@/components/dashboard/CharitySelectionForm";
+import {
+  LogOut,
+  User,
+  Shield,
+  Heart,
+  AlertTriangle,
+  ArrowRight,
+} from "lucide-react";
 
 export default async function DashboardPage({
   searchParams,
@@ -23,10 +32,17 @@ export default async function DashboardPage({
     redirect("/login");
   }
 
-  const [{ data: profile }, { data: scores = [] }] = await Promise.all([
+  const [
+    { data: profile },
+    { data: scores = [] },
+    { data: charities = [] },
+  ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     ScoreService.getUserScores(supabase, user.id),
+    CharityService.getCharities(supabase),
   ]);
+
+  const selectedCharity = charities.find((c) => c.id === profile?.charity_id);
 
   return (
     <div className="min-h-screen bg-[#090D16] text-white p-4 sm:p-8">
@@ -42,6 +58,13 @@ export default async function DashboardPage({
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              href="/charities"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-semibold text-emerald-400 transition"
+            >
+              <Heart className="h-4 w-4 fill-current" />
+              <span>Charity Directory</span>
+            </Link>
             <Link
               href="/profile"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-xs font-medium text-slate-200 transition"
@@ -101,13 +124,16 @@ export default async function DashboardPage({
           </div>
 
           <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-1">
-            <span className="text-xs font-medium text-slate-400">Charity Contribution</span>
-            <div className="flex items-center gap-2">
-              <Heart className="h-4 w-4 text-emerald-400" />
-              <span className="text-lg font-bold text-white">
-                {profile?.charity_contribution_pct ?? 10}%
+            <span className="text-xs font-medium text-slate-400">Designated Charity</span>
+            <div className="flex items-center gap-1.5 truncate">
+              <Heart className="h-4 w-4 text-emerald-400 fill-current shrink-0" />
+              <span className="text-xs font-bold text-white truncate">
+                {selectedCharity ? selectedCharity.name : "None Selected"}
               </span>
             </div>
+            <p className="text-[11px] text-emerald-400 font-medium">
+              {profile?.charity_contribution_pct ?? 10}% Contribution
+            </p>
           </div>
 
           <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-1">
@@ -116,6 +142,33 @@ export default async function DashboardPage({
               {scores.length} / 5
             </div>
           </div>
+        </div>
+
+        {/* Charity Preference Section (Milestone 1D) */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h2 className="text-lg font-bold text-white">
+                Charitable Impact Allocation
+              </h2>
+              <p className="text-xs text-slate-400">
+                Choose which verified partner receives a portion of your subscription fee (minimum 10%).
+              </p>
+            </div>
+            <Link
+              href="/charities"
+              className="inline-flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 font-medium"
+            >
+              <span>Explore Charities</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          <CharitySelectionForm
+            charities={charities}
+            selectedCharityId={profile?.charity_id ?? null}
+            currentPct={Number(profile?.charity_contribution_pct ?? 10)}
+          />
         </div>
 
         {/* Score Management Section (Milestone 1C) */}

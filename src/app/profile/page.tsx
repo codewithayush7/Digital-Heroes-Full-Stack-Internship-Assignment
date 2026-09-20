@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOutAction } from "@/app/actions/auth";
-import { ArrowLeft, LogOut, Heart, Calendar } from "lucide-react";
+import { ArrowLeft, LogOut, Heart, Calendar, ExternalLink } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 export default async function ProfilePage() {
@@ -21,6 +21,16 @@ export default async function ProfilePage() {
     .select("*")
     .eq("id", user.id)
     .single();
+
+  let designatedCharity: { name: string; slug: string } | null = null;
+  if (profile?.charity_id) {
+    const { data: charityData } = await supabase
+      .from("charities")
+      .select("name, slug")
+      .eq("id", profile.charity_id)
+      .maybeSingle();
+    designatedCharity = charityData;
+  }
 
   return (
     <div className="min-h-screen bg-[#090D16] text-white p-4 sm:p-8">
@@ -77,10 +87,26 @@ export default async function ProfilePage() {
             </div>
 
             <div className="py-3 flex justify-between items-center">
-              <span className="text-slate-400 text-xs">Charity Giving %</span>
+              <span className="text-slate-400 text-xs">Designated Charity</span>
+              {designatedCharity ? (
+                <Link
+                  href={`/charities/${designatedCharity.slug}`}
+                  className="inline-flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 font-semibold"
+                >
+                  <Heart className="h-3.5 w-3.5 fill-current" />
+                  <span>{designatedCharity.name}</span>
+                  <ExternalLink className="h-3 w-3 text-slate-500" />
+                </Link>
+              ) : (
+                <span className="text-xs text-slate-500 italic">None selected</span>
+              )}
+            </div>
+
+            <div className="py-3 flex justify-between items-center">
+              <span className="text-slate-400 text-xs">Charity Contribution Level</span>
               <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                <Heart className="h-4 w-4" />
                 <span>{profile?.charity_contribution_pct ?? 10}%</span>
+                <span className="text-[11px] text-slate-500">(min 10%)</span>
               </div>
             </div>
 
@@ -99,7 +125,7 @@ export default async function ProfilePage() {
 
           <div className="rounded-lg bg-slate-900/40 border border-slate-800 p-3.5 text-xs text-slate-400">
             <p>
-              <strong>Security Policy:</strong> In accordance with Digital Heroes security rules, role permissions are locked to prevent client-side privilege escalation.
+              <strong>Security Policy:</strong> In accordance with Digital Heroes security rules, role permissions are locked to prevent client-side privilege escalation. Charity preferences are managed via controlled server actions.
             </p>
           </div>
         </div>

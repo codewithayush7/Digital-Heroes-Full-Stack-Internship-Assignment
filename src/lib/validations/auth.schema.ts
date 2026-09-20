@@ -18,7 +18,14 @@ export const signupSchema = z
       .string()
       .min(2, "Full name must be at least 2 characters")
       .max(100, "Full name must be under 100 characters"),
-    charityId: z.string().uuid("Invalid charity ID").optional().or(z.literal("")),
+    charityId: z
+      .string()
+      .regex(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+        "Invalid charity ID"
+      )
+      .optional()
+      .or(z.literal("")),
     charityContributionPct: z.coerce
       .number()
       .min(

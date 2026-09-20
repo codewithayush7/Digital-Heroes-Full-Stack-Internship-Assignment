@@ -35,10 +35,17 @@ export default function Home() {
             <span>Sign In</span>
           </Link>
           <Link
-            href="/dashboard"
+            href="/charities"
             className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-medium px-5 py-2.5 text-sm transition duration-150"
           >
-            <span>Subscriber Dashboard</span>
+            <span>Explore Charities</span>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-300 font-medium px-5 py-2.5 text-sm transition duration-150"
+          >
+            <span>Dashboard</span>
             <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
