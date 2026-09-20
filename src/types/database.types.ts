@@ -62,6 +62,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       subscriptions: {
         Row: {
@@ -109,6 +110,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       charities: {
         Row: {
@@ -156,6 +158,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       charity_events: {
         Row: {
@@ -191,6 +194,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       golf_scores: {
         Row: {
@@ -217,6 +221,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       draws: {
         Row: {
@@ -291,6 +296,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       draw_entries: {
         Row: {
@@ -326,6 +332,7 @@ export interface Database {
           prize_amount?: number;
           created_at?: string;
         };
+        Relationships: [];
       };
       winners: {
         Row: {
@@ -379,6 +386,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       donations: {
         Row: {
@@ -414,7 +422,27 @@ export interface Database {
           status?: DonationStatus;
           created_at?: string;
         };
+        Relationships: [];
       };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      is_admin: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }
+
+export type Tables<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Row"];
+export type Profile = Tables<"profiles">;
