@@ -9,13 +9,13 @@ interface DirectDonationCardProps {
   charityName: string;
 }
 
-const PRESET_AMOUNTS = [10, 25, 50, 100];
+const PRESET_AMOUNTS = [50, 100, 250, 500];
 
 export function DirectDonationCard({
   charityId,
   charityName,
 }: DirectDonationCardProps) {
-  const [amount, setAmount] = useState<number>(25);
+  const [amount, setAmount] = useState<number>(50);
   const [customAmount, setCustomAmount] = useState<string>("");
   const [isCustom, setIsCustom] = useState<boolean>(false);
   const [isPending, setIsPending] = useState<boolean>(false);
@@ -43,12 +43,12 @@ export function DirectDonationCard({
     setError(null);
 
     const finalAmount = isCustom ? parseFloat(customAmount) : amount;
-    if (isNaN(finalAmount) || finalAmount < 1) {
-      setError("Please enter a donation amount of at least $1.00.");
+    if (isNaN(finalAmount) || finalAmount < 50) {
+      setError("Please enter a donation amount of at least ₹50.00.");
       return;
     }
     if (finalAmount > 50000) {
-      setError("Maximum single donation is $50,000.00.");
+      setError("Maximum single donation is ₹50,000.00.");
       return;
     }
 
@@ -111,7 +111,7 @@ export function DirectDonationCard({
                   : "border-slate-800 bg-slate-900/50 text-slate-300 hover:border-slate-700"
               }`}
             >
-              ${preset}
+              ₹{preset}
             </button>
           ))}
         </div>
@@ -123,7 +123,7 @@ export function DirectDonationCard({
               htmlFor="customAmount"
               className="text-xs text-slate-400 font-medium"
             >
-              Or enter custom amount ($ USD)
+              Or enter custom amount (₹ INR)
             </label>
             {!isCustom ? (
               <button
@@ -142,15 +142,15 @@ export function DirectDonationCard({
           {isCustom && (
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">
-                $
+                ₹
               </span>
               <input
                 id="customAmount"
                 type="number"
-                min="1"
+                min="50"
                 max="50000"
                 step="1"
-                placeholder="25"
+                placeholder="50"
                 value={customAmount}
                 onChange={handleCustomChange}
                 className="w-full rounded-lg border border-slate-700 bg-slate-900/80 pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400"
@@ -176,7 +176,7 @@ export function DirectDonationCard({
               <Sparkles className="h-3.5 w-3.5 fill-current" />
             )}
             <span>
-              Donate ${isCustom ? customAmount || "0" : amount}
+              Donate ₹{isCustom ? customAmount || "0" : amount}
             </span>
           </button>
         </div>

@@ -33,6 +33,7 @@ export async function createDonationCheckoutAction(formData: FormData) {
     {
       charityId: parsed.data.charityId,
       amount: parsed.data.amount,
+      currency: "inr",
       userId: user?.id || null,
       originUrl,
     }

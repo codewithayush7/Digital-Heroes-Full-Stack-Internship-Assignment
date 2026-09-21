@@ -51,7 +51,7 @@ export class DonationService {
       return { url: null, error: "The selected charity could not be found." };
     }
 
-    const currency = (params.currency || "usd").toLowerCase();
+    const currency = (params.currency || "inr").toLowerCase();
     const unitAmountCents = Math.round(amount * 100);
 
     try {
@@ -72,6 +72,9 @@ export class DonationService {
             quantity: 1,
           },
         ],
+        adaptive_pricing: {
+          enabled: false,
+        },
         client_reference_id: params.userId || undefined,
         metadata: {
           paymentType: "independent_donation",
@@ -144,7 +147,7 @@ export class DonationService {
       };
     }
 
-    const currency = session.currency ? session.currency.toLowerCase() : "usd";
+    const currency = session.currency ? session.currency.toLowerCase() : "inr";
 
     // 3. Delegate exclusively to atomic PostgreSQL RPC
     const { data, error: rpcError } = await adminSupabase.rpc(

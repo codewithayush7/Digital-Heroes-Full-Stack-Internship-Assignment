@@ -1,39 +1,33 @@
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import type { Charity } from "@/lib/services/charity.service";
 import { formatCurrency } from "@/lib/utils";
 import { Sparkles, ArrowRight } from "lucide-react";
+import { CharityCoverImage, CharityLogoImage } from "./CharityImage";
 
 export function CharityCard({ charity }: { charity: Charity }) {
   return (
     <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800 flex flex-col glow-charity transition-all duration-200">
       {/* Cover Image & Featured Badge */}
       <div className="relative h-44 w-full bg-slate-900">
-        {charity.cover_image_url ? (
-          <img
-            src={charity.cover_image_url}
-            alt={charity.name}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-slate-700 bg-slate-900">
-            No Image Available
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent" />
+        <CharityCoverImage
+          src={charity.cover_image_url}
+          alt={charity.name}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent pointer-events-none" />
 
         {charity.is_featured && (
-          <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/90 text-slate-950 px-3 py-1 text-xs font-bold shadow-lg backdrop-blur-md">
+          <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/90 text-slate-950 px-3 py-1 text-xs font-bold shadow-lg backdrop-blur-md z-10">
             <Sparkles className="h-3 w-3 fill-current" />
             <span>Featured Cause</span>
           </div>
         )}
 
         {charity.logo_url && (
-          <div className="absolute bottom-3 left-4 h-12 w-12 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-md">
-            <img
+          <div className="absolute bottom-3 left-4 h-12 w-12 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-md z-10">
+            <CharityLogoImage
               src={charity.logo_url}
-              alt={`${charity.name} logo`}
+              name={charity.name}
               className="h-full w-full object-cover"
             />
           </div>

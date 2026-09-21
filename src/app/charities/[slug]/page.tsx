@@ -1,11 +1,15 @@
 import { notFound } from "next/navigation";
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { CharityService } from "@/lib/services/charity.service";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { PublicShell } from "@/components/public/PublicShell";
 import { DirectDonationCard } from "@/components/charity/DirectDonationCard";
+import {
+  CharityCoverImage,
+  CharityLogoImage,
+  CharityGalleryImage,
+} from "@/components/charity/CharityImage";
 import {
   ArrowLeft,
   Calendar,
@@ -72,14 +76,12 @@ export default async function CharityDetailPage({
         {/* Hero Section */}
         <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl">
           <div className="relative h-64 sm:h-80 w-full bg-slate-950">
-            {charity.cover_image_url && (
-              <img
-                src={charity.cover_image_url}
-                alt={charity.name}
-                className="w-full h-full object-cover"
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
+            <CharityCoverImage
+              src={charity.cover_image_url}
+              alt={charity.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent pointer-events-none" />
 
             {charity.is_featured && (
               <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-500 text-slate-950 px-3.5 py-1 text-xs font-bold shadow-lg">
@@ -92,15 +94,13 @@ export default async function CharityDetailPage({
           <div className="p-6 sm:p-8 relative -mt-16 sm:-mt-20 space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               <div className="flex items-end gap-4">
-                {charity.logo_url && (
-                  <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl overflow-hidden border-2 border-slate-800 bg-slate-900 shadow-xl shrink-0">
-                    <img
-                      src={charity.logo_url}
-                      alt={`${charity.name} logo`}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                )}
+                <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl overflow-hidden border-2 border-slate-800 bg-slate-900 shadow-xl shrink-0">
+                  <CharityLogoImage
+                    src={charity.logo_url}
+                    name={charity.name}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
                 <div className="space-y-1">
                   <h1 className="text-2xl sm:text-3xl font-extrabold text-white">
                     {charity.name}
@@ -190,11 +190,10 @@ export default async function CharityDetailPage({
                   key={index}
                   className="relative h-48 rounded-xl overflow-hidden border border-slate-800 bg-slate-900 group"
                 >
-                  <img
+                  <CharityGalleryImage
                     src={imgUrl}
                     alt={`${charity.name} impact photo ${index + 1}`}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    loading="lazy"
                   />
                 </div>
               ))}

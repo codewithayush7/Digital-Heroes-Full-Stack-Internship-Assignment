@@ -28,13 +28,13 @@ insert into public.charities (
   'Empowering underprivileged youth through mentorship, discipline, and athletics.',
   'NextGen Youth Sports Academy provides free sports coaching, academic tutoring, and equipment grants to children living in underserved communities. Through the dedication of volunteer coaches and community leaders, we help over 2,500 children each year build self-esteem, teamwork skills, and resilience.',
   'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=200&h=200&q=80',
-  'https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=1200&h=600&q=80',
+  'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1200&h=600&q=80',
   array[
-    'https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?auto=format&fit=crop&w=800&q=80'
+    'https://images.unsplash.com/photo-1526232761682-d26e03ac148e?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&w=800&q=80'
   ],
   true,
-  'https://nextgenyouthsports.org',
+  null,
   48500.00
 ),
 (
@@ -43,14 +43,14 @@ insert into public.charities (
   'clean-waters-global',
   'Delivering permanent clean drinking water infrastructure to rural families.',
   'Clean Waters Global Foundation designs and builds sustainable solar-powered water purification and distribution networks across rural areas. By collaborating directly with local leaders, we eliminate waterborne illness and allow young girls to attend school instead of walking hours each day for water.',
-  'https://images.unsplash.com/photo-1541888946425-d0fbb18665c7?auto=format&fit=crop&w=200&h=200&q=80',
+  'https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=200&h=200&q=80',
   'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=1200&h=600&q=80',
   array[
     'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80',
     'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80'
   ],
   false,
-  'https://cleanwatersglobal.org',
+  null,
   92300.00
 ),
 (
@@ -60,13 +60,13 @@ insert into public.charities (
   'Comprehensive mental healthcare, housing support, and career transitions for veterans.',
   'Honor & Valor Veterans Initiative stands beside military service veterans transitioning back to civilian life. We provide trauma counseling, career retraining in high-demand technology fields, and emergency housing assistance so no hero is left behind.',
   'https://images.unsplash.com/photo-1579208575657-c595a05383b7?auto=format&fit=crop&w=200&h=200&q=80',
-  'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=1200&h=600&q=80',
+  'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=1200&h=600&q=80',
   array[
-    'https://images.unsplash.com/photo-1508873696983-2df5703bc20d?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=800&q=80',
     'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=800&q=80'
   ],
   false,
-  'https://honorandvalor.org',
+  null,
   64150.00
 ),
 (
@@ -82,7 +82,7 @@ insert into public.charities (
     'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?auto=format&fit=crop&w=800&q=80'
   ],
   false,
-  'https://starlightpediatric.org',
+  null,
   115400.00
 );
 

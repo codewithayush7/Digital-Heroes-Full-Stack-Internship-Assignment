@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import {
   Search,
@@ -16,11 +15,9 @@ import {
 } from "lucide-react";
 import type { Tables } from "@/types/database.types";
 import { formatCurrency } from "@/lib/utils";
-import {
-  toggleFeaturedCharityAction,
-  deleteCharityAction,
-} from "@/app/actions/charity";
+import { toggleFeaturedCharityAction, deleteCharityAction } from "@/app/actions/charity";
 import { AdminCharityModal } from "./AdminCharityModal";
+import { CharityLogoImage } from "@/components/charity/CharityImage";
 
 export type Charity = Tables<"charities">;
 
@@ -144,15 +141,11 @@ export function AdminCharityTable({ charities }: AdminCharityTableProps) {
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-xl bg-slate-800 border border-slate-700 overflow-hidden flex items-center justify-center shrink-0">
-                            {charity.logo_url ? (
-                              <img
-                                src={charity.logo_url}
-                                alt={charity.name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <Heart className="h-4 w-4 text-slate-500" />
-                            )}
+                            <CharityLogoImage
+                              src={charity.logo_url}
+                              name={charity.name}
+                              className="h-full w-full object-cover"
+                            />
                           </div>
                           <div>
                             <div className="font-bold text-white text-sm">

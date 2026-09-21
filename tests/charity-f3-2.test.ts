@@ -8,6 +8,7 @@ import { CharityService } from "../src/lib/services/charity.service";
 import { DonationService } from "../src/lib/services/donation.service";
 import { donationCheckoutSchema } from "../src/lib/validations/donation.schema";
 import { signupSchema } from "../src/lib/validations/auth.schema";
+import { formatCurrency } from "../src/lib/utils";
 import { stripe } from "../src/lib/stripe";
 import type Stripe from "stripe";
 
@@ -125,6 +126,18 @@ describe("Phase F3.2: Charity Completion & Independent Donations Tests", () => {
       assert.ok(detailContent.includes("Support on Signup"), "Detail page must render Support on Signup link");
       assert.ok(detailContent.includes("charityId="), "Support on Signup must link with charityId param");
     });
+
+    test("formatCurrency(51793.6) returns ₹51,793.60 with ₹ INR formatting and no $ symbol", () => {
+      const formatted = formatCurrency(51793.6);
+      assert.strictEqual(formatted, "₹51,793.60");
+      assert.strictEqual(formatted.includes("$"), false);
+      assert.strictEqual(formatted.startsWith("₹"), true);
+    });
+
+    test("formatCurrency explicitly supports non-INR currencies when requested (e.g. USD)", () => {
+      const formatted = formatCurrency(50, "USD");
+      assert.strictEqual(formatted, "$50.00");
+    });
   });
 
   // ===========================================================================
@@ -184,16 +197,34 @@ describe("Phase F3.2: Charity Completion & Independent Donations Tests", () => {
   // 3. INDEPENDENT DONATION SERVICE & CHECKOUT CREATION
   // ===========================================================================
   describe("3. Independent Donation Service & Stripe Checkout", () => {
-    test("rejects donation below minimum amount ($1)", () => {
+    test("rejects donation below minimum amount (₹25)", () => {
       const result = donationCheckoutSchema.safeParse({
         charityId: testCharityId,
-        amount: 0.5,
+        amount: 25,
       });
       assert.strictEqual(result.success, false);
-      assert.ok(result.error?.issues.some((i) => i.message.includes("Minimum donation")));
+      assert.ok(result.error?.issues.some((i) => i.message.includes("Minimum donation amount is ₹50.00.")));
     });
 
-    test("rejects donation exceeding maximum amount ($50,000)", () => {
+    test("rejects donation below minimum amount (₹49)", () => {
+      const result = donationCheckoutSchema.safeParse({
+        charityId: testCharityId,
+        amount: 49,
+      });
+      assert.strictEqual(result.success, false);
+      assert.ok(result.error?.issues.some((i) => i.message.includes("Minimum donation amount is ₹50.00.")));
+    });
+
+    test("accepts donation meeting minimum amount threshold (₹50)", () => {
+      const result = donationCheckoutSchema.safeParse({
+        charityId: testCharityId,
+        amount: 50,
+      });
+      assert.strictEqual(result.success, true);
+      assert.strictEqual(result.data?.amount, 50);
+    });
+
+    test("rejects donation exceeding maximum amount (₹50,000)", () => {
       const result = donationCheckoutSchema.safeParse({
         charityId: testCharityId,
         amount: 60000,
@@ -202,18 +233,18 @@ describe("Phase F3.2: Charity Completion & Independent Donations Tests", () => {
       assert.ok(result.error?.issues.some((i) => i.message.includes("Maximum single donation")));
     });
 
-    test("rejects non-existent charity ID for checkout", async () => {
+    test("nonexistent charity with amount 50 still reaches the charity validation rather than failing minimum validation", async () => {
       const fakeUuid = "00000000-0000-0000-0000-000000000000";
       const res = await DonationService.createDonationCheckoutSession(adminClient, {
         charityId: fakeUuid,
-        amount: 25,
+        amount: 50,
         originUrl: "http://localhost:3000",
       });
       assert.ok(res.error);
       assert.match(res.error, /could not be found/i);
     });
 
-    test("creates Stripe Checkout Session with mode: 'payment' and custom donation metadata", async () => {
+    test("creates Stripe Checkout Session with mode: 'payment', INR currency, disabled adaptive pricing, and custom donation metadata", async () => {
       // Mock stripe.checkout.sessions.create
       const originalCreate = stripe.checkout.sessions.create;
       let capturedParams: Stripe.Checkout.SessionCreateParams | null = null;
@@ -241,15 +272,17 @@ describe("Phase F3.2: Charity Completion & Independent Donations Tests", () => {
         const params = capturedParams as Stripe.Checkout.SessionCreateParams | null;
         assert.ok(params);
         assert.strictEqual(params.mode, "payment", "Donation session must use mode: payment");
+        assert.strictEqual(params.adaptive_pricing?.enabled, false, "Must disable adaptive pricing");
         assert.strictEqual(params.client_reference_id, testUserId);
         assert.strictEqual(params.metadata?.paymentType, "independent_donation");
         assert.strictEqual(params.metadata?.charityId, testCharityId);
         assert.strictEqual(params.metadata?.userId, testUserId);
 
-        // Verify line items unit amount in cents
+        // Verify line items unit amount in paise and currency in INR
         const lineItem = params.line_items?.[0];
         assert.ok(lineItem);
-        assert.strictEqual(lineItem.price_data?.unit_amount, 5000); // $50.00 in cents
+        assert.strictEqual(lineItem.price_data?.currency, "inr");
+        assert.strictEqual(lineItem.price_data?.unit_amount, 5000); // ₹50.00 in paise
       } finally {
         stripe.checkout.sessions.create = originalCreate;
       }
