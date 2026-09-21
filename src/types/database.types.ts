@@ -448,6 +448,16 @@ export interface Database {
         };
         Returns: Json;
       };
+      record_independent_donation_atomic: {
+        Args: {
+          p_charity_id: string;
+          p_amount: number;
+          p_currency: string;
+          p_stripe_payment_id: string;
+          p_user_id?: string | null;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       [_ in never]: never;

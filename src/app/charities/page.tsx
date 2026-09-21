@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CharityService } from "@/lib/services/charity.service";
 import { CharityCard } from "@/components/charity/CharityCard";
 import { CharityFilter } from "@/components/charity/CharityFilter";
+import { PublicShell } from "@/components/public/PublicShell";
 import { Heart, ArrowLeft } from "lucide-react";
 
 export default async function CharitiesDirectoryPage({
@@ -20,8 +21,8 @@ export default async function CharitiesDirectoryPage({
   });
 
   return (
-    <div className="min-h-screen bg-[#090D16] text-white p-4 sm:p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <PublicShell>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 flex-1 w-full">
         {/* Navigation & Header */}
         <header className="space-y-4">
           <Link
@@ -29,7 +30,7 @@ export default async function CharitiesDirectoryPage({
             className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Back to Overview</span>
+            <span>Back to Home</span>
           </Link>
 
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-800 pb-6">
@@ -73,6 +74,6 @@ export default async function CharitiesDirectoryPage({
           </div>
         )}
       </div>
-    </div>
+    </PublicShell>
   );
 }

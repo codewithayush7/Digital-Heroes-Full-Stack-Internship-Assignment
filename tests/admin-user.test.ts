@@ -38,6 +38,7 @@ describe("Phase F2: Admin User & Subscription Management Tests", () => {
   let primaryAdminId: string;
   let primaryAdminEmail: string;
   let secondaryAdminId: string;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let secondaryAdminEmail: string;
   let testSubscriberId: string;
   let testSubscriberEmail: string;
@@ -452,8 +453,8 @@ describe("Phase F2: Admin User & Subscription Management Tests", () => {
 
       // Mock stripe.subscriptions.update to simulate successful Stripe cancellation
       const originalUpdate = stripe.subscriptions.update;
-      let stripeCalledWith: any = null;
-      (stripe.subscriptions as any).update = async (id: string, params: any) => {
+      let stripeCalledWith: { id: string; params: { cancel_at_period_end?: boolean } } | null = null;
+      (stripe.subscriptions as unknown as { update: (id: string, params: { cancel_at_period_end?: boolean }) => Promise<unknown> }).update = async (id: string, params: { cancel_at_period_end?: boolean }) => {
         stripeCalledWith = { id, params };
         return { id, cancel_at_period_end: true };
       };
@@ -465,9 +466,10 @@ describe("Phase F2: Admin User & Subscription Management Tests", () => {
         assert.strictEqual(res.data.cancel_at_period_end, true);
 
         // Verify Stripe was called FIRST with cancel_at_period_end: true
-        assert.ok(stripeCalledWith);
-        assert.strictEqual(stripeCalledWith.id, sub.stripe_subscription_id);
-        assert.strictEqual(stripeCalledWith.params.cancel_at_period_end, true);
+        const captured = stripeCalledWith as { id: string; params: { cancel_at_period_end?: boolean } } | null;
+        assert.ok(captured);
+        assert.strictEqual(captured.id, sub.stripe_subscription_id);
+        assert.strictEqual(captured.params.cancel_at_period_end, true);
 
         // Verify database: cancel_at_period_end is true, BUT status is STILL 'active'
         const { data: updatedSub } = await adminClient
@@ -506,7 +508,7 @@ describe("Phase F2: Admin User & Subscription Management Tests", () => {
 
       // Mock stripe.subscriptions.update to throw
       const originalUpdate = stripe.subscriptions.update;
-      (stripe.subscriptions as any).update = async () => {
+      (stripe.subscriptions as unknown as { update: () => Promise<never> }).update = async () => {
         throw new Error("Stripe network timeout or invalid subscription");
       };
 

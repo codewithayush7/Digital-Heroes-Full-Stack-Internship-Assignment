@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SubscriptionService } from "@/lib/services/subscription.service";
+import { DonationService } from "@/lib/services/donation.service";
 import type Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +65,11 @@ export async function POST(request: NextRequest) {
             planType,
             userId
           );
+        } else if (
+          session.mode === "payment" &&
+          session.metadata?.paymentType === "independent_donation"
+        ) {
+          await DonationService.recordIndependentDonation(adminSupabase, session);
         }
         break;
       }

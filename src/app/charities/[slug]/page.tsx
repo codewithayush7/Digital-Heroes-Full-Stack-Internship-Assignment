@@ -4,6 +4,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { CharityService } from "@/lib/services/charity.service";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { PublicShell } from "@/components/public/PublicShell";
+import { DirectDonationCard } from "@/components/charity/DirectDonationCard";
 import {
   ArrowLeft,
   Calendar,
@@ -12,14 +14,19 @@ import {
   Sparkles,
   Heart,
   Trophy,
+  CheckCircle2,
+  Image as ImageIcon,
 } from "lucide-react";
 
 export default async function CharityDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ donation?: string }>;
 }) {
   const { slug } = await params;
+  const { donation } = await searchParams;
   const supabase = await createClient();
 
   const result = await CharityService.getCharityBySlug(supabase, slug);
@@ -36,10 +43,10 @@ export default async function CharityDetailPage({
   } = await supabase.auth.getUser();
 
   return (
-    <div className="min-h-screen bg-[#090D16] text-white p-4 sm:p-8">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <PublicShell>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 flex-1 w-full">
         {/* Navigation */}
-        <div>
+        <div className="flex items-center justify-between">
           <Link
             href="/charities"
             className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition"
@@ -48,6 +55,19 @@ export default async function CharityDetailPage({
             <span>Back to All Charities</span>
           </Link>
         </div>
+
+        {/* Donation Success Notice */}
+        {donation === "success" && (
+          <div className="flex items-start gap-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-xs text-emerald-300 shadow-lg">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="font-bold text-white text-sm">Thank you for your generosity!</h4>
+              <p>
+                Your direct independent donation to <strong>{charity.name}</strong> has been successfully processed and allocated to their cause.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Hero Section */}
         <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 shadow-2xl">
@@ -96,7 +116,7 @@ export default async function CharityDetailPage({
               {/* Action Button */}
               <div className="shrink-0">
                 <Link
-                  href={user ? "/dashboard" : "/signup"}
+                  href={user ? "/dashboard" : `/signup?charityId=${charity.id}`}
                   className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-5 py-2.5 text-xs shadow-lg shadow-emerald-500/20 transition"
                 >
                   <Heart className="h-4 w-4 fill-current" />
@@ -141,6 +161,11 @@ export default async function CharityDetailPage({
           </div>
         </div>
 
+        {/* Independent Direct Donation Card */}
+        <section>
+          <DirectDonationCard charityId={charity.id} charityName={charity.name} />
+        </section>
+
         {/* Mission & About */}
         <section className="glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800 space-y-3">
           <h2 className="text-lg font-bold text-white">About the Cause</h2>
@@ -148,6 +173,34 @@ export default async function CharityDetailPage({
             {charity.description}
           </p>
         </section>
+
+        {/* Impact & Community Photo Gallery */}
+        {charity.gallery_images && charity.gallery_images.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-2">
+              <ImageIcon className="h-5 w-5 text-emerald-400" />
+              <h2 className="text-lg font-bold text-white">
+                Impact & Community Gallery
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {charity.gallery_images.map((imgUrl, index) => (
+                <div
+                  key={index}
+                  className="relative h-48 rounded-xl overflow-hidden border border-slate-800 bg-slate-900 group"
+                >
+                  <img
+                    src={imgUrl}
+                    alt={`${charity.name} impact photo ${index + 1}`}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Upcoming Events / Golf Days */}
         <section className="space-y-4">
@@ -202,6 +255,6 @@ export default async function CharityDetailPage({
           )}
         </section>
       </div>
-    </div>
+    </PublicShell>
   );
 }
