@@ -42,6 +42,20 @@ export interface SimulationResult {
   totalActiveSubscribersCount: number;
 }
 
+export interface PublishDrawResult {
+  draw_id: string;
+  status: "published";
+  published_at: string;
+  winners_count: number;
+  tier_5_winners: number;
+  tier_4_winners: number;
+  tier_3_winners: number;
+  jackpot_rolled_over: boolean;
+  rollover_jackpot_out: number;
+  unclaimed_tier_4: number;
+  unclaimed_tier_3: number;
+}
+
 /**
  * Service orchestrating Draw lifecycle, participant eligibility,
  * prize-pool calculation, and persistent simulation snapshots.
@@ -510,4 +524,31 @@ export class DrawService {
       },
     };
   }
+
+  /**
+   * Publishes a simulated draw atomically via PostgreSQL publish_draw RPC.
+   * Acquires an advisory lock, verifies admin authorization, validates authoritative rollover,
+   * enforces accounting invariants, creates winner rows, and updates draw status to 'published'.
+   */
+  static async publishDraw(
+    supabase: SupabaseClient<Database>,
+    drawId: string,
+    adminId: string
+  ): Promise<DrawServiceResult<PublishDrawResult>> {
+    if (!adminId) {
+      return { error: "Admin user ID is required to publish a draw." };
+    }
+
+    const { data, error } = await supabase.rpc("publish_draw", {
+      p_draw_id: drawId,
+      p_admin_id: adminId,
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { data: data as unknown as PublishDrawResult };
+  }
 }
+

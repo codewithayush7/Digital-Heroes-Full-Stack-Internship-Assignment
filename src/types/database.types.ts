@@ -433,6 +433,13 @@ export interface Database {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
       };
+      publish_draw: {
+        Args: {
+          p_draw_id: string;
+          p_admin_id: string;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       [_ in never]: never;
