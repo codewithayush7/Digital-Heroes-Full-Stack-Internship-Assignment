@@ -440,6 +440,14 @@ export interface Database {
         };
         Returns: Json;
       };
+      update_user_role_atomic: {
+        Args: {
+          p_caller_id: string;
+          p_target_user_id: string;
+          p_new_role: string;
+        };
+        Returns: Json;
+      };
     };
     Enums: {
       [_ in never]: never;
