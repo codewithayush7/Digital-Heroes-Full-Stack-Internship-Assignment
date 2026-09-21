@@ -2,16 +2,144 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createDrawSchema } from "@/lib/validations/draw.schema";
 import {
   DrawService,
+  type Draw,
+  type SimulationResult,
   type PublishDrawResult,
 } from "@/lib/services/draw.service";
 
-export type PublishDrawActionResult = {
+export type DrawActionResult<T = unknown> = {
   success?: boolean;
   error?: string;
-  data?: PublishDrawResult | null;
+  data?: T | null;
 };
+
+export type PublishDrawActionResult = DrawActionResult<PublishDrawResult>;
+
+/**
+ * Server action to create a new draw in 'draft' status.
+ * Authenticates caller, verifies admin role, validates input via createDrawSchema,
+ * and delegates to DrawService.createDraw.
+ */
+export async function createDrawAction(
+  input: FormData | { title: string; draw_date: string; draw_mode: string }
+): Promise<DrawActionResult<Draw>> {
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch {
+    return { error: "Authentication required to create draws." };
+  }
+
+  // 1. Get current authenticated user
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Authentication required to create draws." };
+  }
+
+  // 2. Verify profile.role = 'admin'
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError || !profile) {
+    return { error: "Unable to verify administrator authorization." };
+  }
+
+  if (profile.role !== "admin") {
+    return { error: "Unauthorized: only administrators can create draws." };
+  }
+
+  // 3. Parse input
+  let rawData: Record<string, unknown>;
+  if (input instanceof FormData) {
+    rawData = {
+      title: input.get("title"),
+      draw_date: input.get("draw_date"),
+      draw_mode: input.get("draw_mode"),
+    };
+  } else {
+    rawData = input as Record<string, unknown>;
+  }
+
+  const parsed = createDrawSchema.safeParse(rawData);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid draw input." };
+  }
+
+  // 4. Delegate to DrawService
+  const result = await DrawService.createDraw(supabase, parsed.data, user.id);
+  if (result.error) {
+    return { error: result.error };
+  }
+
+  revalidatePath("/admin/draws");
+  return { success: true, data: result.data };
+}
+
+/**
+ * Server action to simulate or re-simulate a draw.
+ * Authenticates caller, verifies admin role, validates drawId,
+ * and delegates to DrawService.simulateDraw.
+ */
+export async function simulateDrawAction(
+  drawId: string
+): Promise<DrawActionResult<SimulationResult>> {
+  if (!drawId) {
+    return { error: "Draw ID is required to simulate." };
+  }
+
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch {
+    return { error: "Authentication required to simulate draws." };
+  }
+
+  // 1. Get current authenticated user
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    return { error: "Authentication required to simulate draws." };
+  }
+
+  // 2. Verify profile.role = 'admin'
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (profileError || !profile) {
+    return { error: "Unable to verify administrator authorization." };
+  }
+
+  if (profile.role !== "admin") {
+    return { error: "Unauthorized: only administrators can simulate draws." };
+  }
+
+  // 3. Delegate to DrawService
+  const result = await DrawService.simulateDraw(supabase, drawId);
+  if (result.error) {
+    return { error: result.error };
+  }
+
+  revalidatePath("/admin/draws");
+  revalidatePath(`/admin/draws/${drawId}`);
+
+  return { success: true, data: result.data };
+}
 
 /**
  * Server action to publish a simulated draw.

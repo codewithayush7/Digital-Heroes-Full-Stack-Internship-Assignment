@@ -59,15 +59,23 @@ export default async function AdminPage() {
           </p>
         </div>
 
-        <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-2">
-          <div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20">
-            <Trophy className="h-4 w-4" />
+        <Link
+          href="/admin/draws"
+          className="glass-panel p-5 rounded-xl border border-slate-800 space-y-2 hover:border-amber-500/40 hover:bg-slate-800/40 transition group block"
+        >
+          <div className="flex items-center justify-between">
+            <div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center border border-amber-500/20 group-hover:scale-105 transition">
+              <Trophy className="h-4 w-4" />
+            </div>
+            <span className="text-[11px] font-semibold text-amber-400 group-hover:translate-x-0.5 transition inline-flex items-center gap-0.5">
+              Open Engine &rarr;
+            </span>
           </div>
-          <h2 className="text-sm font-semibold text-white">Draw Engine</h2>
+          <h2 className="text-sm font-semibold text-white group-hover:text-amber-300 transition">Draw Engine</h2>
           <p className="text-xs text-slate-400">
             Configure monthly draws, simulate, and publish results.
           </p>
-        </div>
+        </Link>
 
         <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-2">
           <div className="h-8 w-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
@@ -79,15 +87,23 @@ export default async function AdminPage() {
           </p>
         </div>
 
-        <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-2">
-          <div className="h-8 w-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20">
-            <FileCheck className="h-4 w-4" />
+        <Link
+          href="/admin/winners"
+          className="glass-panel p-5 rounded-xl border border-slate-800 space-y-2 hover:border-purple-500/40 hover:bg-slate-800/40 transition group block"
+        >
+          <div className="flex items-center justify-between">
+            <div className="h-8 w-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20 group-hover:scale-105 transition">
+              <FileCheck className="h-4 w-4" />
+            </div>
+            <span className="text-[11px] font-semibold text-purple-400 group-hover:translate-x-0.5 transition inline-flex items-center gap-0.5">
+              View Directory &rarr;
+            </span>
           </div>
-          <h2 className="text-sm font-semibold text-white">Winner Verification</h2>
+          <h2 className="text-sm font-semibold text-white group-hover:text-purple-300 transition">Winner Verification</h2>
           <p className="text-xs text-slate-400">
             Review score proof screenshots and track payouts.
           </p>
-        </div>
+        </Link>
       </div>
 
       <div className="glass-panel p-6 rounded-xl border border-slate-800 space-y-2">

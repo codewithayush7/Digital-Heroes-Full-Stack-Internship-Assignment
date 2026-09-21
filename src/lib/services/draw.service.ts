@@ -16,6 +16,51 @@ import {
 
 export type Draw = Tables<"draws">;
 export type DrawEntry = Tables<"draw_entries">;
+export type Winner = Tables<"winners">;
+
+export type DrawEntryWithProfile = DrawEntry & {
+  profile?: {
+    id: string;
+    full_name: string | null;
+    email: string;
+  } | null;
+};
+
+export type WinnerWithDetails = Winner & {
+  profile?: {
+    id: string;
+    full_name: string | null;
+    email: string;
+  } | null;
+  draw?: {
+    id: string;
+    title: string;
+    draw_date: string;
+  } | null;
+};
+
+export interface WinnerFilters {
+  drawId?: string;
+  tier?: Database["public"]["Tables"]["winners"]["Row"]["tier"];
+  verificationStatus?: Database["public"]["Tables"]["winners"]["Row"]["verification_status"];
+  paymentStatus?: Database["public"]["Tables"]["winners"]["Row"]["payment_status"];
+}
+
+export type UserWinnerWithDraw = Winner & {
+  draw?: {
+    id: string;
+    title: string;
+    draw_date: string;
+    published_at: string | null;
+  } | null;
+};
+
+export interface UserWinningsSummary {
+  winners: UserWinnerWithDraw[];
+  totalWon: number;
+  pendingAmount: number;
+  paidAmount: number;
+}
 
 export type DrawServiceResult<T> = {
   data?: T;
@@ -549,6 +594,217 @@ export class DrawService {
     }
 
     return { data: data as unknown as PublishDrawResult };
+  }
+
+  /**
+   * Retrieve all draw entries for a given draw along with participant profile info.
+   * Read-only orchestrator for authorized admin simulation and publish review.
+   */
+  static async getDrawEntriesWithProfiles(
+    supabase: SupabaseClient<Database>,
+    drawId: string
+  ): Promise<DrawServiceResult<DrawEntryWithProfile[]>> {
+    const entriesResult = await this.getDrawEntries(supabase, drawId);
+    if (entriesResult.error) {
+      return { error: entriesResult.error };
+    }
+
+    const entries = entriesResult.data ?? [];
+    if (entries.length === 0) {
+      return { data: [] };
+    }
+
+    const userIds = [...new Set(entries.map((e) => e.user_id))];
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", userIds);
+
+    if (profilesError) {
+      return { error: profilesError.message };
+    }
+
+    const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    const entriesWithProfiles: DrawEntryWithProfile[] = entries.map((entry) => ({
+      ...entry,
+      profile: profileMap.get(entry.user_id) || null,
+    }));
+
+    return { data: entriesWithProfiles };
+  }
+
+  /**
+   * List winners across draws with optional filters for draw, tier, verification status, and payment status.
+   * Read-only orchestrator for authorized admin winner review.
+   */
+  static async listWinners(
+    supabase: SupabaseClient<Database>,
+    filters?: WinnerFilters
+  ): Promise<DrawServiceResult<WinnerWithDetails[]>> {
+    let query = supabase
+      .from("winners")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (filters?.drawId) {
+      query = query.eq("draw_id", filters.drawId);
+    }
+    if (filters?.tier) {
+      query = query.eq("tier", filters.tier);
+    }
+    if (filters?.verificationStatus) {
+      query = query.eq("verification_status", filters.verificationStatus);
+    }
+    if (filters?.paymentStatus) {
+      query = query.eq("payment_status", filters.paymentStatus);
+    }
+
+    const { data: winners, error: winnersError } = await query;
+    if (winnersError) {
+      return { error: winnersError.message };
+    }
+
+    if (!winners || winners.length === 0) {
+      return { data: [] };
+    }
+
+    const userIds = [...new Set(winners.map((w) => w.user_id))];
+    const drawIds = [...new Set(winners.map((w) => w.draw_id))];
+
+    const [profilesRes, drawsRes] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, email").in("id", userIds),
+      supabase.from("draws").select("id, title, draw_date").in("id", drawIds),
+    ]);
+
+    const profileMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p]));
+    const drawMap = new Map((drawsRes.data ?? []).map((d) => [d.id, d]));
+
+    const winnersWithDetails: WinnerWithDetails[] = winners.map((winner) => ({
+      ...winner,
+      profile: profileMap.get(winner.user_id) || null,
+      draw: drawMap.get(winner.draw_id) || null,
+    }));
+
+    return { data: winnersWithDetails };
+  }
+
+  /**
+   * Retrieves the latest published draw.
+   * Draft and simulated draws are strictly excluded.
+   * Returns null if no published draw exists.
+   */
+  static async getLatestPublishedDraw(
+    supabase: SupabaseClient<Database>
+  ): Promise<DrawServiceResult<Draw | null>> {
+    const { data, error } = await supabase
+      .from("draws")
+      .select("*")
+      .eq("status", "published")
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("draw_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { data: data || null };
+  }
+
+  /**
+   * Retrieves a specific user's draw entry for a given draw.
+   * Returns null if user did not participate in this draw.
+   */
+  static async getUserDrawEntry(
+    supabase: SupabaseClient<Database>,
+    drawId: string,
+    userId: string
+  ): Promise<DrawServiceResult<DrawEntry | null>> {
+    const { data, error } = await supabase
+      .from("draw_entries")
+      .select("*")
+      .eq("draw_id", drawId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    return { data: data || null };
+  }
+
+  /**
+   * Retrieves all winnings records for a user, joined with draw title and dates.
+   * Computes lifetime winnings stats: totalWon, pendingAmount, and paidAmount.
+   * Note: Authoritative match counts live on draw_entries.matches_count; winners table stores tier and prize.
+   */
+  static async getUserWinnings(
+    supabase: SupabaseClient<Database>,
+    userId: string
+  ): Promise<DrawServiceResult<UserWinningsSummary>> {
+    const { data: winners, error: winnersError } = await supabase
+      .from("winners")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (winnersError) {
+      return { error: winnersError.message };
+    }
+
+    if (!winners || winners.length === 0) {
+      return {
+        data: {
+          winners: [],
+          totalWon: 0,
+          pendingAmount: 0,
+          paidAmount: 0,
+        },
+      };
+    }
+
+    const drawIds = [...new Set(winners.map((w) => w.draw_id))];
+    const { data: draws, error: drawsError } = await supabase
+      .from("draws")
+      .select("id, title, draw_date, published_at")
+      .in("id", drawIds);
+
+    if (drawsError) {
+      return { error: drawsError.message };
+    }
+
+    const drawMap = new Map((draws ?? []).map((d) => [d.id, d]));
+
+    let totalWon = 0;
+    let pendingAmount = 0;
+    let paidAmount = 0;
+
+    const winnersWithDraw: UserWinnerWithDraw[] = winners.map((winner) => {
+      const amount = Number(winner.prize_amount ?? 0);
+      totalWon += amount;
+      if (winner.payment_status === "paid") {
+        paidAmount += amount;
+      } else {
+        pendingAmount += amount;
+      }
+
+      return {
+        ...winner,
+        draw: drawMap.get(winner.draw_id) || null,
+      };
+    });
+
+    return {
+      data: {
+        winners: winnersWithDraw,
+        totalWon: Math.round(totalWon * 100) / 100,
+        pendingAmount: Math.round(pendingAmount * 100) / 100,
+        paidAmount: Math.round(paidAmount * 100) / 100,
+      },
+    };
   }
 }
 

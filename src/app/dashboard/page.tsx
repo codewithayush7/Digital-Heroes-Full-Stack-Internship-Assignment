@@ -5,10 +5,14 @@ import { signOutAction } from "@/app/actions/auth";
 import { ScoreService } from "@/lib/services/score.service";
 import { CharityService } from "@/lib/services/charity.service";
 import { SubscriptionService } from "@/lib/services/subscription.service";
+import { DrawService } from "@/lib/services/draw.service";
 import { ScoreForm } from "@/components/dashboard/ScoreForm";
 import { ScoreList } from "@/components/dashboard/ScoreList";
 import { CharitySelectionForm } from "@/components/dashboard/CharitySelectionForm";
 import { SubscriptionCard } from "@/components/dashboard/SubscriptionCard";
+import { DrawParticipationCard } from "@/components/dashboard/DrawParticipationCard";
+import { DrawResultsCard } from "@/components/dashboard/DrawResultsCard";
+import { WinningsHistoryCard } from "@/components/dashboard/WinningsHistoryCard";
 import {
   LogOut,
   User,
@@ -41,15 +45,33 @@ export default async function DashboardPage({
     { data: scores = [] },
     { data: charities = [] },
     activeSub,
+    latestDrawRes,
+    userWinningsRes,
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     ScoreService.getUserScores(supabase, user.id),
     CharityService.getCharities(supabase),
     SubscriptionService.getActiveSubscription(supabase, user.id),
+    DrawService.getLatestPublishedDraw(supabase),
+    DrawService.getUserWinnings(supabase, user.id),
   ]);
+
+  const latestDraw = latestDrawRes.data ?? null;
+  const userEntryRes = latestDraw
+    ? await DrawService.getUserDrawEntry(supabase, latestDraw.id, user.id)
+    : { data: null };
+  const userEntry = userEntryRes.data ?? null;
+
+  const userWinnings = userWinningsRes.data ?? {
+    winners: [],
+    totalWon: 0,
+    pendingAmount: 0,
+    paidAmount: 0,
+  };
 
   const selectedCharity = charities.find((c) => c.id === profile?.charity_id);
   const isSubscribed = Boolean(activeSub);
+  const retainedScoreValues = scores.map((s) => s.score);
 
   return (
     <div className="min-h-screen bg-[#090D16] text-white p-4 sm:p-8">
@@ -162,7 +184,11 @@ export default async function DashboardPage({
               </span>
             </div>
             <p className="text-[11px] text-slate-500 font-medium">
-              {profile?.role === "admin" ? "Admin Privileges Active" : isSubscribed ? "Qualified for Draws" : "Subscribe to Enter Draws"}
+              {profile?.role === "admin"
+                ? "Admin Privileges Active"
+                : isSubscribed
+                ? "Qualified for Draws"
+                : "Subscribe to Enter Draws"}
             </p>
           </div>
 
@@ -184,14 +210,40 @@ export default async function DashboardPage({
             <div className="text-lg font-bold text-amber-400">
               {scores.length} / 5
             </div>
+            <p className="text-[11px] text-slate-500 font-medium">
+              {scores.length === 5 ? "Entry Complete" : `${5 - scores.length} more needed`}
+            </p>
           </div>
         </div>
 
-        {/* Subscription & Billing Section */}
-        <SubscriptionCard
-          subscription={activeSub}
-          isActiveSubscriber={isSubscribed}
+        {/* Next Monthly Draw Readiness (Phase D2) */}
+        <DrawParticipationCard
+          isSubscribed={isSubscribed}
+          scoresCount={scores.length}
+          retainedScores={retainedScoreValues}
         />
+
+        {/* Official Draw Results (Phase D2) */}
+        <DrawResultsCard
+          latestDraw={latestDraw}
+          userEntry={userEntry}
+        />
+
+        {/* Winnings & Payouts Overview (Phase D2) */}
+        <WinningsHistoryCard
+          winners={userWinnings.winners}
+          totalWon={userWinnings.totalWon}
+          pendingAmount={userWinnings.pendingAmount}
+          paidAmount={userWinnings.paidAmount}
+        />
+
+        {/* Subscription & Billing Section */}
+        <div id="subscription-card">
+          <SubscriptionCard
+            subscription={activeSub}
+            isActiveSubscriber={isSubscribed}
+          />
+        </div>
 
         {/* Charity Preference Section (Milestone 1D) */}
         <div className="space-y-4">
@@ -221,7 +273,7 @@ export default async function DashboardPage({
         </div>
 
         {/* Score Management Section (Milestone 1C) */}
-        <div className="space-y-6">
+        <div id="score-form" className="space-y-6">
           <div className="space-y-1">
             <h2 className="text-lg font-bold text-white">
               Golf Score Management (Stableford)
