@@ -4,9 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { signOutAction } from "@/app/actions/auth";
 import { ScoreService } from "@/lib/services/score.service";
 import { CharityService } from "@/lib/services/charity.service";
+import { SubscriptionService } from "@/lib/services/subscription.service";
 import { ScoreForm } from "@/components/dashboard/ScoreForm";
 import { ScoreList } from "@/components/dashboard/ScoreList";
 import { CharitySelectionForm } from "@/components/dashboard/CharitySelectionForm";
+import { SubscriptionCard } from "@/components/dashboard/SubscriptionCard";
 import {
   LogOut,
   User,
@@ -14,14 +16,16 @@ import {
   Heart,
   AlertTriangle,
   ArrowRight,
+  CheckCircle2,
+  Info,
 } from "lucide-react";
 
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; billing?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, billing } = await searchParams;
   const supabase = await createClient();
 
   const {
@@ -36,13 +40,16 @@ export default async function DashboardPage({
     { data: profile },
     { data: scores = [] },
     { data: charities = [] },
+    activeSub,
   ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", user.id).single(),
     ScoreService.getUserScores(supabase, user.id),
     CharityService.getCharities(supabase),
+    SubscriptionService.getActiveSubscription(supabase, user.id),
   ]);
 
   const selectedCharity = charities.find((c) => c.id === profile?.charity_id);
+  const isSubscribed = Boolean(activeSub);
 
   return (
     <div className="min-h-screen bg-[#090D16] text-white p-4 sm:p-8">
@@ -93,6 +100,31 @@ export default async function DashboardPage({
           </div>
         </header>
 
+        {/* Billing Feedback Banners */}
+        {billing === "success" && (
+          <div className="flex items-start gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+            <div>
+              <h4 className="font-semibold text-emerald-200">Subscription Activated</h4>
+              <p className="text-xs text-emerald-300/90 mt-0.5">
+                Thank you! Your membership is active, and you are now qualified for monthly prize draws and charitable allocations.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {billing === "cancelled" && (
+          <div className="flex items-start gap-3 rounded-xl border border-slate-700 bg-slate-900/80 p-4 text-sm text-slate-300">
+            <Info className="h-5 w-5 shrink-0 text-slate-400" />
+            <div>
+              <h4 className="font-semibold text-slate-200">Checkout Cancelled</h4>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Your checkout session was cancelled. No charges were made.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Unauthorized Notification Banner */}
         {error === "unauthorized" && (
           <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-300">
@@ -109,18 +141,29 @@ export default async function DashboardPage({
         {/* Overview Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-1">
-            <span className="text-xs font-medium text-slate-400">Account Role</span>
+            <span className="text-xs font-medium text-slate-400">Subscriber Status</span>
             <div>
               <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase ${
-                  profile?.role === "admin"
-                    ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
-                    : "bg-blue-500/10 text-blue-400 border border-blue-500/30"
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                  isSubscribed
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                    : activeSub?.status === "past_due"
+                    ? "bg-rose-500/10 text-rose-400 border border-rose-500/30"
+                    : "bg-slate-800 text-slate-400 border border-slate-700"
                 }`}
               >
-                {profile?.role || "subscriber"}
+                {isSubscribed
+                  ? activeSub?.cancel_at_period_end
+                    ? "Canceling at Period End"
+                    : "Active Subscriber"
+                  : activeSub?.status === "past_due"
+                  ? "Past Due"
+                  : "Inactive"}
               </span>
             </div>
+            <p className="text-[11px] text-slate-500 font-medium">
+              {profile?.role === "admin" ? "Admin Privileges Active" : isSubscribed ? "Qualified for Draws" : "Subscribe to Enter Draws"}
+            </p>
           </div>
 
           <div className="glass-panel p-5 rounded-xl border border-slate-800 space-y-1">
@@ -143,6 +186,12 @@ export default async function DashboardPage({
             </div>
           </div>
         </div>
+
+        {/* Subscription & Billing Section */}
+        <SubscriptionCard
+          subscription={activeSub}
+          isActiveSubscriber={isSubscribed}
+        />
 
         {/* Charity Preference Section (Milestone 1D) */}
         <div className="space-y-4">
