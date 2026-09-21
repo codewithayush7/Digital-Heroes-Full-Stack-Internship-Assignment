@@ -147,8 +147,8 @@ describe("Phase F3.2: Charity Completion & Independent Donations Tests", () => {
     test("accepts valid charityId in signup schema", () => {
       const result = signupSchema.safeParse({
         email: "test@example.com",
-        password: "password123",
-        confirmPassword: "password123",
+        password: "Password123",
+        confirmPassword: "Password123",
         fullName: "Test Donor",
         charityId: testCharityId,
         charityContributionPct: 20,
@@ -163,8 +163,8 @@ describe("Phase F3.2: Charity Completion & Independent Donations Tests", () => {
     test("accepts signup without charityId (optional pre-selection)", () => {
       const result = signupSchema.safeParse({
         email: "test2@example.com",
-        password: "password123",
-        confirmPassword: "password123",
+        password: "Password123",
+        confirmPassword: "Password123",
         fullName: "Test Donor 2",
         charityContributionPct: 15,
       });
@@ -175,8 +175,8 @@ describe("Phase F3.2: Charity Completion & Independent Donations Tests", () => {
     test("rejects invalid non-UUID charityId in signup schema", () => {
       const result = signupSchema.safeParse({
         email: "test3@example.com",
-        password: "password123",
-        confirmPassword: "password123",
+        password: "Password123",
+        confirmPassword: "Password123",
         fullName: "Test Donor 3",
         charityId: "invalid-not-a-uuid",
         charityContributionPct: 15,

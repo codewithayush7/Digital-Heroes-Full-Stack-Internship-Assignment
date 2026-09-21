@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { signupAction, type AuthActionResult } from "@/app/actions/auth";
 import type { Charity } from "@/lib/services/charity.service";
-import { AlertCircle, CheckCircle2, ArrowRight, Heart } from "lucide-react";
+import { AlertCircle, CheckCircle2, ArrowRight, Heart, Check, Circle, Mail } from "lucide-react";
 import {
   MIN_CHARITY_CONTRIBUTION_PCT,
   MAX_CHARITY_CONTRIBUTION_PCT,
@@ -27,6 +27,14 @@ export function SignupForm({
   const [contributionPct, setContributionPct] = useState<number>(
     MIN_CHARITY_CONTRIBUTION_PCT
   );
+  const [password, setPassword] = useState<string>("");
+
+  const passwordRules = [
+    { label: "At least 8 characters", met: password.length >= 8 },
+    { label: "One uppercase letter", met: /[A-Z]/.test(password) },
+    { label: "One lowercase letter", met: /[a-z]/.test(password) },
+    { label: "One number", met: /[0-9]/.test(password) },
+  ];
 
   const [state, formAction, isPending] = useActionState<
     AuthActionResult | null,
@@ -38,36 +46,64 @@ export function SignupForm({
   return (
     <div className="flex min-h-screen items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#090D16]">
       <div className="w-full max-w-md space-y-6 glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800 shadow-2xl">
-        <div className="text-center space-y-2">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 mb-2 border border-emerald-500/20">
-            <Heart className="h-6 w-6" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-            Join Digital Heroes
-          </h1>
-          <p className="text-sm text-slate-400">
-            Track your golf scores, enter monthly draws, and make an impact.
-          </p>
-        </div>
+        {state?.success ? (
+          <div className="text-center space-y-6 py-2">
+            <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-lg shadow-emerald-500/10">
+              <Mail className="h-8 w-8" />
+            </div>
 
-        {/* Global Success Notice */}
-        {state?.success && (
-          <div className="flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
-            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
-            <p>{state.message}</p>
-          </div>
-        )}
+            <div className="space-y-2">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+                Check your email
+              </h1>
+              <p className="text-sm text-slate-300">
+                Your account has been created successfully! A verification email has been sent to your address.
+              </p>
+            </div>
 
-        {/* Global Error Banner */}
-        {state?.error && (
-          <div className="flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3.5 text-sm text-rose-300">
-            <AlertCircle className="h-5 w-5 shrink-0 text-rose-400" />
-            <p>{state.error}</p>
-          </div>
-        )}
+            <div className="rounded-xl border border-slate-700/60 bg-slate-900/60 p-4 text-xs text-slate-400 text-left space-y-2">
+              <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
+                <span>Verification Required</span>
+              </div>
+              <p className="leading-relaxed">
+                Before you can sign in and access the dashboard, you must verify your email address by clicking the link in the message sent to your inbox.
+              </p>
+            </div>
 
-        {!state?.success && (
-          <form action={formAction} className="space-y-4">
+            <div className="pt-2">
+              <Link
+                href="/login"
+                className="w-full flex items-center justify-center gap-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold py-2.5 px-4 text-sm transition duration-150 shadow-lg shadow-emerald-500/20"
+              >
+                <span>Proceed to Sign In</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="text-center space-y-2">
+              <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 mb-2 border border-emerald-500/20">
+                <Heart className="h-6 w-6" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
+                Join Digital Heroes
+              </h1>
+              <p className="text-sm text-slate-400">
+                Track your golf scores, enter monthly draws, and make an impact.
+              </p>
+            </div>
+
+            {/* Global Error Banner */}
+            {state?.error && (
+              <div className="flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3.5 text-sm text-rose-300">
+                <AlertCircle className="h-5 w-5 shrink-0 text-rose-400" />
+                <p>{state.error}</p>
+              </div>
+            )}
+
+            <form action={formAction} className="space-y-4">
             {preSelectedPlan && (
               <input type="hidden" name="plan" value={preSelectedPlan} />
             )}
@@ -121,6 +157,8 @@ export function SignupForm({
                   type="password"
                   autoComplete="new-password"
                   required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 transition"
                 />
@@ -141,6 +179,35 @@ export function SignupForm({
                   placeholder="••••••••"
                   className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-3.5 py-2.5 text-sm text-white placeholder-slate-500 focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400 transition"
                 />
+              </div>
+            </div>
+
+            {/* Dynamic Password Requirements Checklist */}
+            <div
+              className="rounded-lg border border-slate-800 bg-slate-900/50 p-3 space-y-2"
+              data-testid="password-requirements"
+            >
+              <span className="block text-xs font-medium text-slate-400">
+                Password requirements:
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+                {passwordRules.map((rule) => (
+                  <div
+                    key={rule.label}
+                    className={`flex items-center gap-1.5 transition-colors duration-150 ${
+                      rule.met
+                        ? "text-emerald-400 font-medium"
+                        : "text-slate-500"
+                    }`}
+                  >
+                    {rule.met ? (
+                      <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                    ) : (
+                      <Circle className="h-2.5 w-2.5 shrink-0 text-slate-600 fill-slate-800" />
+                    )}
+                    <span>{rule.label}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -221,6 +288,7 @@ export function SignupForm({
               )}
             </button>
           </form>
+          </>
         )}
 
         <div className="border-t border-slate-800/80 pt-4 text-center text-xs text-slate-400">

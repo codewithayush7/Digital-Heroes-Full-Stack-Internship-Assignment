@@ -2,6 +2,72 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database.types";
 
+export type UserVerificationStatus = {
+  email_confirmed_at?: string | null;
+  confirmed_at?: string | null;
+};
+
+export function isUserEmailConfirmed(
+  user: UserVerificationStatus | null | undefined
+): boolean {
+  if (!user) return false;
+  return Boolean(user.email_confirmed_at || user.confirmed_at);
+}
+
+export function evaluateRouteAccess(params: {
+  pathname: string;
+  user: (UserVerificationStatus & { id?: string }) | null | undefined;
+  userRole?: string | null;
+}): { allowed: boolean; redirectTo?: string } {
+  const { pathname, user, userRole } = params;
+
+  const isProtectedRoute =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/scores") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/admin");
+
+  const isAuthPage = pathname === "/login" || pathname === "/signup";
+  const confirmed = isUserEmailConfirmed(user);
+
+  // 1. Protected route but no user session
+  if (isProtectedRoute && !user) {
+    return {
+      allowed: false,
+      redirectTo: `/login?next=${encodeURIComponent(pathname)}`,
+    };
+  }
+
+  // 2. Protected route with authenticated user but unconfirmed email
+  if (isProtectedRoute && user && !confirmed) {
+    return {
+      allowed: false,
+      redirectTo: "/login?error=email_not_confirmed",
+    };
+  }
+
+  // 3. Admin route with confirmed user but non-admin role
+  if (pathname.startsWith("/admin") && user && confirmed) {
+    if (userRole !== "admin") {
+      return {
+        allowed: false,
+        redirectTo: "/dashboard?error=unauthorized",
+      };
+    }
+  }
+
+  // 4. Auth pages redirect only if authenticated AND email is confirmed
+  // (Prevents infinite redirect loop if unverified user visits /login?error=email_not_confirmed)
+  if (isAuthPage && user && confirmed) {
+    return {
+      allowed: false,
+      redirectTo: "/dashboard",
+    };
+  }
+
+  return { allowed: true };
+}
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -37,40 +103,24 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // 1. Protected routes check
-  const isProtectedRoute =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/profile") ||
-    pathname.startsWith("/admin");
-
-  if (isProtectedRoute && !user) {
-    const redirectUrl = new URL("/login", request.url);
-    redirectUrl.searchParams.set(
-      "next",
-      pathname + request.nextUrl.search
-    );
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  // 2. Admin routes authorization check
+  let userRole: string | null = null;
   if (pathname.startsWith("/admin") && user) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
-
-    if (profile?.role !== "admin") {
-      const redirectUrl = new URL("/dashboard", request.url);
-      redirectUrl.searchParams.set("error", "unauthorized");
-      return NextResponse.redirect(redirectUrl);
-    }
+    userRole = profile?.role ?? null;
   }
 
-  // 3. Auth pages redirect if already authenticated
-  const isAuthPage = pathname === "/login" || pathname === "/signup";
-  if (isAuthPage && user) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  const access = evaluateRouteAccess({
+    pathname,
+    user,
+    userRole,
+  });
+
+  if (!access.allowed && access.redirectTo) {
+    return NextResponse.redirect(new URL(access.redirectTo, request.url));
   }
 
   return supabaseResponse;

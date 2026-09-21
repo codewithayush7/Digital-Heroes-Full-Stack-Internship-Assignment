@@ -1,20 +1,55 @@
 "use client";
 
-import { useActionState, Suspense } from "react";
+import { useActionState, useState, useTransition, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { loginAction, type AuthActionResult } from "@/app/actions/auth";
-import { AlertCircle, ArrowRight, ShieldCheck } from "lucide-react";
+import {
+  loginAction,
+  resendVerificationAction,
+  type AuthActionResult,
+} from "@/app/actions/auth";
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  RefreshCw,
+  ShieldCheck,
+} from "lucide-react";
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
   const urlError = searchParams.get("error");
+  const verified = searchParams.get("verified") === "true";
+
+  const [email, setEmail] = useState("");
+  const [resendPending, startResendTransition] = useTransition();
+  const [resendResult, setResendResult] = useState<AuthActionResult | null>(null);
 
   const [state, formAction, isPending] = useActionState<
     AuthActionResult | null,
     FormData
   >(loginAction, null);
+
+  const isEmailNotConfirmed = Boolean(
+    (state?.error && state.error.toLowerCase().includes("email not confirmed")) ||
+      urlError === "email_not_confirmed"
+  );
+
+  const handleResend = () => {
+    if (!email.trim()) {
+      setResendResult({ error: "Please enter your email address first." });
+      return;
+    }
+    setResendResult(null);
+    startResendTransition(async () => {
+      const fd = new FormData();
+      fd.append("email", email.trim());
+      const res = await resendVerificationAction(null, fd);
+      setResendResult(res);
+    });
+  };
 
   return (
     <div className="w-full max-w-md space-y-8 glass-panel rounded-2xl p-6 sm:p-8 border border-slate-800 shadow-2xl">
@@ -30,18 +65,99 @@ function LoginForm() {
         </p>
       </div>
 
-      {/* Global Error Banner */}
-      {(state?.error || urlError) && (
-        <div className="flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3.5 text-sm text-rose-300">
-          <AlertCircle className="h-5 w-5 shrink-0 text-rose-400" />
-          <p>
-            {state?.error ||
-              (urlError === "unauthorized"
-                ? "Access denied. Administrator privileges required."
-                : "Authentication error. Please try again.")}
-          </p>
+      {/* 1. Verified Success Banner */}
+      {verified && !resendResult && (
+        <div className="flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-sm text-emerald-300">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+          <p>Your email has been verified. You can now sign in.</p>
         </div>
       )}
+
+      {/* 2. Resend Success Banner */}
+      {resendResult?.success && (
+        <div className="flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-sm text-emerald-300">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+          <p>{resendResult.message}</p>
+        </div>
+      )}
+
+      {/* 3. Resend Error Banner */}
+      {resendResult?.error && (
+        <div className="flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3.5 text-sm text-rose-300">
+          <AlertCircle className="h-5 w-5 shrink-0 text-rose-400" />
+          <p>{resendResult.error}</p>
+        </div>
+      )}
+
+      {/* 4. Email Not Confirmed Verification Required Banner */}
+      {isEmailNotConfirmed && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-300 space-y-3">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-400" />
+            <div>
+              <p className="font-semibold text-amber-200">
+                Email Verification Required
+              </p>
+              <p className="text-xs text-amber-300/90 mt-0.5">
+                Please verify your email address before signing in.
+              </p>
+            </div>
+          </div>
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resendPending}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 underline underline-offset-4 disabled:opacity-50 transition"
+            >
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${resendPending ? "animate-spin" : ""}`}
+              />
+              <span>
+                {resendPending
+                  ? "Sending verification email..."
+                  : "Resend verification email"}
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Generic / URL Error Banner */}
+      {!isEmailNotConfirmed &&
+        (state?.error || urlError) &&
+        !resendResult?.success && (
+          <div className="flex items-start gap-3 rounded-lg border border-rose-500/30 bg-rose-500/10 p-3.5 text-sm text-rose-300">
+            <AlertCircle className="h-5 w-5 shrink-0 text-rose-400" />
+            <div className="space-y-1">
+              <p>
+                {state?.error ||
+                  (urlError === "verification_link_invalid"
+                    ? "This verification link is invalid, expired, or has already been used. Please request a new verification email or sign in below."
+                    : urlError === "unauthorized"
+                    ? "Access denied. Administrator privileges required."
+                    : "Authentication error. Please try again.")}
+              </p>
+              {urlError === "verification_link_invalid" && (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resendPending}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-400 hover:text-amber-300 underline underline-offset-4 mt-1 disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={`h-3 w-3 ${resendPending ? "animate-spin" : ""}`}
+                  />
+                  <span>
+                    {resendPending
+                      ? "Sending..."
+                      : "Resend verification email"}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
       <form action={formAction} className="space-y-5">
         <input type="hidden" name="next" value={next} />
@@ -57,6 +173,8 @@ function LoginForm() {
             id="email"
             name="email"
             type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             autoComplete="email"
             required
             placeholder="you@example.com"
