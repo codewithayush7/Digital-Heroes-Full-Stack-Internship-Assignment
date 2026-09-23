@@ -2,9 +2,11 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ScoreService } from "@/lib/services/score.service";
+import { SubscriptionService } from "@/lib/services/subscription.service";
+import { isUserEmailConfirmed } from "@/lib/auth";
 import { ScoreForm } from "@/components/dashboard/ScoreForm";
 import { ScoreList } from "@/components/dashboard/ScoreList";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 
 export default async function ScoresPage() {
   const supabase = await createClient();
@@ -17,10 +19,14 @@ export default async function ScoresPage() {
     redirect("/login?next=/scores");
   }
 
-  const { data: scores = [] } = await ScoreService.getUserScores(
-    supabase,
-    user.id
-  );
+  if (!isUserEmailConfirmed(user)) {
+    redirect("/login?error=email_not_confirmed");
+  }
+
+  const [isSubscribed, { data: scores = [] }] = await Promise.all([
+    SubscriptionService.hasActiveSubscription(supabase, user.id),
+    ScoreService.getUserScores(supabase, user.id),
+  ]);
 
   return (
     <div className="min-h-screen bg-[#090D16] text-white p-4 sm:p-8">
@@ -44,8 +50,30 @@ export default async function ScoresPage() {
           </p>
         </div>
 
-        <ScoreForm currentCount={scores.length} />
-        <ScoreList scores={scores} />
+        {isSubscribed ? (
+          <ScoreForm currentCount={scores.length} />
+        ) : (
+          <div className="glass-panel rounded-xl p-6 border border-amber-500/30 bg-amber-500/5 space-y-4">
+            <div className="flex items-center gap-2 text-amber-400 font-semibold text-sm">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>Active Subscription Required</span>
+            </div>
+            <p className="text-xs text-slate-300">
+              An active subscription is required to record and manage golf scores. Subscribe to enter your scores and qualify for monthly prize draws.
+            </p>
+            <div>
+              <Link
+                href="/dashboard#subscription-card"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs transition duration-150 shadow-md shadow-amber-500/20"
+              >
+                <span>Subscribe on Dashboard</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        )}
+
+        <ScoreList scores={scores} canManage={isSubscribed} />
       </div>
     </div>
   );

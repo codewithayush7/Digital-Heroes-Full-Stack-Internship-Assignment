@@ -2,17 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/types/database.types";
 
-export type UserVerificationStatus = {
-  email_confirmed_at?: string | null;
-  confirmed_at?: string | null;
-};
+import {
+  isUserEmailConfirmed,
+  type UserVerificationStatus,
+} from "@/lib/auth";
 
-export function isUserEmailConfirmed(
-  user: UserVerificationStatus | null | undefined
-): boolean {
-  if (!user) return false;
-  return Boolean(user.email_confirmed_at || user.confirmed_at);
-}
+export { isUserEmailConfirmed, type UserVerificationStatus };
 
 export function evaluateRouteAccess(params: {
   pathname: string;

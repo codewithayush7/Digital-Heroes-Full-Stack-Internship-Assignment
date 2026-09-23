@@ -7,7 +7,13 @@ import { formatDate } from "@/lib/utils";
 import { SCORE_MIN, SCORE_MAX } from "@/lib/config/constants";
 import { Edit2, Trash2, Calendar, Check, X, AlertCircle } from "lucide-react";
 
-export function ScoreList({ scores }: { scores: GolfScore[] }) {
+export function ScoreList({
+  scores,
+  canManage = true,
+}: {
+  scores: GolfScore[];
+  canManage?: boolean;
+}) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editScore, setEditScore] = useState<number>(36);
   const [editDate, setEditDate] = useState<string>("");
@@ -145,50 +151,52 @@ export function ScoreList({ scores }: { scores: GolfScore[] }) {
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                  {isEditing ? (
-                    <>
-                      <button
-                        type="button"
-                        disabled={isSubmitting}
-                        onClick={() => handleSaveEdit(s.id)}
-                        className="inline-flex items-center gap-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 text-xs font-medium transition disabled:opacity-50"
-                      >
-                        <Check className="h-3 w-3" />
-                        <span>Save</span>
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isSubmitting}
-                        onClick={cancelEdit}
-                        className="inline-flex items-center gap-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 text-xs font-medium transition"
-                      >
-                        <X className="h-3 w-3" />
-                        <span>Cancel</span>
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => startEdit(s)}
-                        className="inline-flex items-center gap-1 rounded border border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-300 px-2.5 py-1 text-xs font-medium transition"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        type="button"
-                        disabled={isSubmitting}
-                        onClick={() => handleDelete(s.id)}
-                        className="inline-flex items-center gap-1 rounded border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 px-2.5 py-1 text-xs font-medium transition disabled:opacity-50"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        <span>Delete</span>
-                      </button>
-                    </>
-                  )}
-                </div>
+                {canManage && (
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    {isEditing ? (
+                      <>
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() => handleSaveEdit(s.id)}
+                          className="inline-flex items-center gap-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 text-xs font-medium transition disabled:opacity-50"
+                        >
+                          <Check className="h-3 w-3" />
+                          <span>Save</span>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={cancelEdit}
+                          className="inline-flex items-center gap-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 text-xs font-medium transition"
+                        >
+                          <X className="h-3 w-3" />
+                          <span>Cancel</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => startEdit(s)}
+                          className="inline-flex items-center gap-1 rounded border border-slate-700 bg-slate-900/60 hover:bg-slate-800 text-slate-300 px-2.5 py-1 text-xs font-medium transition"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() => handleDelete(s.id)}
+                          className="inline-flex items-center gap-1 rounded border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 px-2.5 py-1 text-xs font-medium transition disabled:opacity-50"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          <span>Delete</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}

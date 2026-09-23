@@ -129,15 +129,24 @@ export function DrawParticipationCard({
                       5 - scoresCount === 1 ? "" : "s"
                     } to qualify for draw entry.`}
               </p>
-              {scoresCount < 5 && (
-                <a
-                  href="#score-form"
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 hover:text-amber-300 transition"
-                >
-                  <span>Enter scores below</span>
-                  <ArrowDown className="h-3 w-3" />
-                </a>
-              )}
+              {scoresCount < 5 &&
+                (isSubscribed ? (
+                  <a
+                    href="#score-form"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 hover:text-amber-300 transition"
+                  >
+                    <span>Enter scores below</span>
+                    <ArrowDown className="h-3 w-3" />
+                  </a>
+                ) : (
+                  <a
+                    href="#subscription-card"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 hover:text-amber-300 transition"
+                  >
+                    <span>Subscribe to enter scores</span>
+                    <ArrowDown className="h-3 w-3" />
+                  </a>
+                ))}
             </div>
           </div>
         </div>
